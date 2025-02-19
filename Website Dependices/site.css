@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css?family=Nanum+Brush+Script|Roboto|Roboto+Slab');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lilita+One&family=Roboto:ital,wght@0,100..900;1,100..900&family=Rubik+Marker+Hatch&family=Shafarik&display=swap');
 
 @media only screen and (min-device-width: 300px) and (max-device-width: 840px){
 
@@ -49,7 +49,7 @@
 
 body {
 	max-width: 100%;
-	font-family: 'Roboto Slab', serif;
+	font-family: 'Bebas Neue', serif;
 	margin: 0;
 	padding: 0;
 	background-color: white;
@@ -75,6 +75,7 @@ h2,h3,h4 {
 p {
 	font-size: 1.4em;
 	color: black;
+	border: 5px solid white;
 	padding: 10px 40px 10px 40px;
 }
 
@@ -108,7 +109,7 @@ header {
 }
 
 .bg1 {
-	background-color: #ffe400;
+	background-color: #c65ceffe;
 }
 
 .bg2 {
@@ -116,7 +117,7 @@ header {
 }
 
 .bg3 {
-	background-color: #d2d2d2;
+	background-color: #e0e257;
 }
 
 iframe {
@@ -136,5 +137,5 @@ footer {
 }
 
 #incomplete {
-	background-color: red;
+	background: linear-gradient(to right, purple, rgb(175, 55, 230));
 }
