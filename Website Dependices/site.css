@@ -89,14 +89,17 @@ li {
 	list-style-position: inside;
 }
 
-img {
+img{
 	display: block;
 	margin-left: auto;
 	margin-right: auto;
 	height: auto;
 	max-height: 400px;
-	max-width: 100%;
-}
+	max-width: 100%;  
+	border-radius: 10%;
+}  
+
+
 
 
 
@@ -137,5 +140,5 @@ footer {
 }
 
 #incomplete {
-	background: linear-gradient(to right, purple, rgb(175, 55, 230));
+	background: linear-gradient(to right, rgb(124, 8, 124), rgb(175, 55, 230));
 }
