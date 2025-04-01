@@ -1,48 +1,59 @@
-// Dynamic not static 
-//
-//Library-Minim 
-//
-//Global Variables 
-// 
-float X, Y, Width, Height; 
-float exitX, exitY, exitWidth, exitHeight;
-
-void setup() {  
-  fullScreen(); 
-  int appWidth = displayWidth;
- int appHeight = displayHeight;
+void setup() {
+  // 
+  fullScreen();
  
- exitX = appWidth * ;
- exitY = appHeight * ;
- exitWidth = appWidth * ;
- exitHeight = appHeight * ;
-  
- X = appWidth *  0.40; 
- Y = appHeight * 0.40; 
- Width = appWidth * 0.40; 
- Height = appHeight  * 0.40;  
- muteX = appWidth * 0.20;
- muteY = appHeight * 0.20;
- rect(X,Y, Width,Height); 
- rect (topDisplayx, TopdisplayY, topDisplayWidth, topDisplayHeight);
- // 
-//
+  // 
+  int appWidth = displayWidth;
+  int appHeight = displayHeight;
+ 
+  // 
+  float rectWidth = appWidth * 0.40;  // 
+  float rectHeight = appHeight * 0.40;  // 
+  float rectX = appWidth * 0.30;  // 
+  float rectY = appHeight * 0.25;  // 
+ 
+  // 
+  float squareSize = 100;  // 
+  int numSquares = 12;  // 
+  float totalSquaresWidth = numSquares * squareSize;  // 
+  float squareY = rectY + rectHeight + 20;  // 
+ 
+  // 
+  rect(rectX, rectY, rectWidth, rectHeight);
+ //
+  float startX = rectX + (rectWidth - totalSquaresWidth) / 2;
+ 
+  // 
+  for (int i = 0; i < numSquares; i++) {
+    // 
+    float squareX = startX + (i * squareSize);
+   
+    // 
+    rect(squareX, squareY, squareSize, squareSize);
+  }
+ 
+  // 
+  float buttonSize = 80;
 
-rect(muteX,muteY, muteWidth,muteHeight);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
-rect(X,Y, Width,Height);
+  // 
+  float buttonX = appWidth - buttonSize;  // 
+  float buttonY = 0;  // 
 
-} 
-void draw() {}; 
-//
-void mousePressed() {};
-//
-void keyPressed () {} 
-// 
-//END MAIN Program
+  // 
+  rect(buttonX, buttonY, buttonSize, buttonSize);
+}
+
+void draw() {
+  // 
+  // 
+}
+
+void mousePressed() {
+  // 
+  // 
+}
+
+void keyPressed() {
+  // 
+  // 
+}
