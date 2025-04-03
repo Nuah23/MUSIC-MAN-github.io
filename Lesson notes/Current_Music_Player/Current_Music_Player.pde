@@ -33,7 +33,7 @@ void setup() {
   }
  
   // 
-  float buttonSize = 80;
+  float buttonSize = 90;
 
   // 
   float buttonX = appWidth - buttonSize;  // 
