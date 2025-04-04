@@ -14,7 +14,7 @@ void setup() {
  
   // 
   float squareSize = 100;  // 
-  int numSquares = 12;  // 
+  int numSquares = 13;  // 
   float totalSquaresWidth = numSquares * squareSize;  // 
   float squareY = rectY + rectHeight + 20;  // 
  
