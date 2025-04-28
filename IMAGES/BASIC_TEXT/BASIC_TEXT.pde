@@ -40,8 +40,8 @@ while (textWidth(title) > titleWidth) {
 }
 //
 //Ink Color
-color redInk = #2C08FF;
-fill(redInk);
+color purpleInk = #2C08FF;
+fill(purpleInk);
 textAlign(CENTER, CENTER);
 textFont(titleFont, fontSize);
 //
