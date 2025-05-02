@@ -9,8 +9,8 @@ boolean isPlaying = false;  // To track play/pause state
 void setup() {
   fullScreen();
  minim = new Minim(this);
- player = minim.loadFile("assets/audio/PlayboyN.mp3");
-album = loadImage("assets/images/nuah.jpg");
+ player = minim.loadFile("musicApp/sketch/assets/audio/PlayboyN.mp3");
+album = loadImage("musicApp/sketch/assets/images/nuah.jpg");
   album.resize(400, 250); // Album resized to a rectangular shape (wider than tall)
 
   textAlign(CENTER, CENTER);
