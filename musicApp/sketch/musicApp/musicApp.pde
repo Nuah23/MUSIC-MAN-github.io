@@ -4,128 +4,130 @@ Minim minim;
 AudioPlayer player;
 PImage album;
 
-boolean isPlaying = false;  // To track play/pause state
+boolean isPlaying = false;
+boolean isMuted = false;
+float savedGain = 0.0;
+
+String[] songs = {"assets/audio/PlayboyN.mp3"};
+String[] albums = {""};
+int currentSong = 0;
 
 void setup() {
   fullScreen();
- minim = new Minim(this);
- player = minim.loadFile("musicApp/sketch/assets/audio/PlayboyN.mp3");
-album = loadImage("musicApp/sketch/assets/images/nuah.jpg");
-  album.resize(400, 250); // Album resized to a rectangular shape (wider than tall)
+  minim = new Minim(this);
+  loadSong(currentSong);
 
   textAlign(CENTER, CENTER);
-  textFont(createFont("Arial Black", 48));  // Larger text font
-  fill(0, 0, 139); // Blue ink color
+  textFont(createFont("MV Boli", 60));
+  fill(0, 0, 139);
 }
 
 void draw() {
   background(255);
   float centerX = width / 2;
 
-  // Title Rectangle (larger size)
+  // Border
+  noFill();
+  stroke(0);
+  strokeWeight(5);
+  rect(50, 50, width - 100, height - 100);
+
+  // Title Bar
   fill(200);
-  rect(centerX - 250, 50, 500, 80);  // Bigger title rectangle
+  rect(centerX - 300, 50, 600, 100);
   fill(0, 0, 139);
-  text("Alleyway Monastries", centerX, 90);  // Larger text
+  text("Alleyway Monastries", centerX, 100);
 
-  // Album Image (now a rectangle)
-  image(album, centerX - 200, 150);
+  // Album Image
+  image(album, centerX - 250, 180);
 
-  // Buttons
-  float btnY = 500;  // Move buttons lower for spacing
-  float btnSize = 80;  // Bigger button size
-  float totalButtonWidth = btnSize * 4; // Total width of all buttons
-
-  // Calculate starting X position for the buttons to be centered
+  // Control Buttons
+  float btnY = 550;
+  float btnSize = 100;
+  float totalButtonWidth = btnSize * 7;
   float buttonX = centerX - totalButtonWidth / 2;
 
-  // Fast Backward Button (Before Play/Pause)
-  fill(180);
-  rect(buttonX, btnY, btnSize, btnSize);  // Fast Backward Square
-  fill(0);
-  // Fast backward symbol (⏪) - two triangles to the left
-  triangle(buttonX + 35, btnY + 20, buttonX + 35, btnY + 60, buttonX + 5, btnY + 40);  // Left triangle
-  triangle(buttonX + 55, btnY + 20, buttonX + 55, btnY + 60, buttonX + 25, btnY + 40);  // Right triangle
+  // Fast Backward
+  drawButton(buttonX, btnY, btnSize, "⏪");
+  buttonX += btnSize;
 
-  // Play/Pause Button (same position)
-  buttonX += btnSize;  // Move to next button position
-  fill(180);
-  rect(buttonX, btnY, btnSize, btnSize);  // Play/Pause Square
-  fill(0);
+  // Play/Pause
+  drawButton(buttonX, btnY, btnSize, isPlaying ? "⏸" : "▶");
+  buttonX += btnSize;
 
-  if (isPlaying) {
-    // Pause Button (Two rectangles)
-    rect(buttonX + 20, btnY + 20, 15, 40);  // Left rectangle
-    rect(buttonX + 50, btnY + 20, 15, 40);   // Right rectangle
-  } else {
-    // Play Button (Triangle)
-    triangle(buttonX + 25, btnY + 20, buttonX + 25, btnY + 60, buttonX + 55, btnY + 40);
-  }
+  // Stop
+  drawButton(buttonX, btnY, btnSize, "⏹");
+  buttonX += btnSize;
 
-  // Stop Button (next to Play/Pause, no space between)
-  buttonX += btnSize;  // Move to next button position
-  fill(180);
-  rect(buttonX, btnY, btnSize, btnSize);  // Stop Square
-  fill(0);
-  rect(buttonX + 15, btnY + 20, 40, 40);  // Stop symbol (a square)
+  // Fast Forward
+  drawButton(buttonX, btnY, btnSize, "⏩");
+  buttonX += btnSize;
 
-  // Fast Forward Button (after Stop)
-  buttonX += btnSize;  // Move to next button position
-  fill(180);
-  rect(buttonX, btnY, btnSize, btnSize);  // Fast Forward Square
-  fill(0);
-  // Fast forward symbol (⏩) - two triangles to the right
-  triangle(buttonX + 25, btnY + 20, buttonX + 25, btnY + 60, buttonX + 55, btnY + 40);  // Left triangle
-  triangle(buttonX + 45, btnY + 20, buttonX + 45, btnY + 60, buttonX + 75, btnY + 40);  // Right triangle
+  // Next
+  drawButton(buttonX, btnY, btnSize, "⏭");
+  buttonX += btnSize;
 
-  // Music Progress Bar (bigger)
-  float barY = 620;  // Move progress bar lower
-  float barWidth = 500;  // Larger progress bar
+  // Previous
+  drawButton(buttonX, btnY, btnSize, "⏮");
+  buttonX += btnSize;
+
+  // Mute/Unmute
+  drawButton(buttonX, btnY, btnSize, isMuted ? "🔇" : "🔊");
+
+  // Progress Bar
+  float barY = 700;
+  float barWidth = 100 * 15;
   fill(220);
-  rect(centerX - 250, barY, barWidth, 25);  // Larger bar
+  rect(centerX - barWidth / 2, barY, barWidth, 30);
 
-  // Progress fill
   if (player.isPlaying()) {
     float progress = map(player.position(), 0, player.length(), 0, barWidth);
     fill(0, 0, 139);
-    rect(centerX - 250, barY, progress, 25);
+    rect(centerX - barWidth / 2, barY, progress, 30);
   }
 
-  // Time Text - dynamic (larger text)
+  // Time Display
   int currentMillis = player.position();
   int totalMillis = player.length();
-
   String currentTime = nf(currentMillis / 60000, 2) + ":" + nf((currentMillis / 1000) % 60, 2);
   String totalTime = nf(totalMillis / 60000, 2) + ":" + nf((totalMillis / 1000) % 60, 2);
-
   fill(0);
-  textSize(20);  // Larger text size
-  text(currentTime + " / " + totalTime, centerX, barY + 35);
-
-  // Quit Button (top-right corner)
-  fill(200);
-  rect(width - 70, 20, 40, 40);  // Bigger quit button
-  fill(255, 0, 0);
   textSize(24);
-  text("X", width - 50, 40);
+  text(currentTime + " / " + totalTime, centerX, barY + 40);
+
+  // Quit Button
+  fill(200);
+  rect(width - 90, 30, 50, 50);
+  fill(255, 0, 0);
+  textSize(30);
+  text("X", width - 60, 55);
+}
+
+void drawButton(float x, float y, float size, String label) {
+  fill(180);
+  rect(x, y, size, size);
+  fill(0);
+  textSize(40);
+  text(label, x + size / 2, y + size / 2);
 }
 
 void mousePressed() {
   float centerX = width / 2;
-  float btnY = 500;
-  float btnSize = 80;
-  float totalButtonWidth = btnSize * 4;
+  float btnY = 550;
+  float btnSize = 100;
+  float totalButtonWidth = btnSize * 7;
   float buttonX = centerX - totalButtonWidth / 2;
 
   // Fast Backward
-  if (mouseX > buttonX && mouseX < buttonX + btnSize && mouseY > btnY && mouseY < btnY + btnSize) {
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
     int newPos = player.position() - 5000;
     player.cue(max(newPos, 0));
+    return;
   }
+  buttonX += btnSize;
 
   // Play/Pause
-  buttonX += btnSize;
-  if (mouseX > buttonX && mouseX < buttonX + btnSize && mouseY > btnY && mouseY < btnY + btnSize) {
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
     if (isPlaying) {
       player.pause();
       isPlaying = false;
@@ -133,25 +135,75 @@ void mousePressed() {
       player.play();
       isPlaying = true;
     }
+    return;
   }
+  buttonX += btnSize;
 
   // Stop
-  buttonX += btnSize;
-  if (mouseX > buttonX && mouseX < buttonX + btnSize && mouseY > btnY && mouseY < btnY + btnSize) {
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
     player.pause();
     player.rewind();
     isPlaying = false;
+    return;
   }
+  buttonX += btnSize;
 
   // Fast Forward
-  buttonX += btnSize;
-  if (mouseX > buttonX && mouseX < buttonX + btnSize && mouseY > btnY && mouseY < btnY + btnSize) {
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
     int newPos = player.position() + 5000;
     player.cue(min(newPos, player.length()));
+    return;
+  }
+  buttonX += btnSize;
+
+  // Next
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+    currentSong = (currentSong + 1) % songs.length;
+    loadSong(currentSong);
+    return;
+  }
+  buttonX += btnSize;
+
+  // Previous
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+    currentSong = (currentSong - 1 + songs.length) % songs.length;
+    loadSong(currentSong);
+    return;
+  }
+  buttonX += btnSize;
+
+  // Mute/Unmute
+  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+    if (isMuted) {
+      player.setGain(savedGain);
+      isMuted = false;
+    } else {
+      savedGain = player.getGain();
+      player.setGain(-80);
+      isMuted = true;
+    }
+    return;
   }
 
-  // Quit button (same as before)
-  if (mouseX > width - 70 && mouseX < width - 30 && mouseY > 20 && mouseY < 60) {
+  // Quit
+  if (isMouseOver(width - 90, 30, 50, 50)) {
     exit();
   }
 }
+
+boolean isMouseOver(float x, float y, float w, float h) {
+  return mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
+}
+
+void loadSong(int index) {
+  if (player != null) {
+    player.close();
+  }
+  player = minim.loadFile(songs[index]);
+  album = loadImage(albums[index]);
+  if (album == null) {
+    println("Warning: Image file not found.");
+    album = createImage(500, 300, RGB);
+    album.loadPixels();
+    for (int i = 0; i < album.pixels.length; i++) {
+      album.pixels[i] = color(200); // Light gray placeholder
