@@ -6,77 +6,74 @@ PImage album;
 
 boolean isPlaying = false;
 boolean isMuted = false;
-float savedGain = 0.0;
+float savedGain = 0;
 
-String[] songs = {"assets/audio/PlayboyN.mp3"};
-String[] albums = {""};
+String[] songs = {"musicApp/sketch/assets/audio/PlayboyN.mp3"};
+String[] albums = {"assets/images/ME-JU.jpg", "assets/images/1316.jpg"};
 int currentSong = 0;
 
 void setup() {
   fullScreen();
   minim = new Minim(this);
-  loadSong(currentSong);
-
   textAlign(CENTER, CENTER);
   textFont(createFont("MV Boli", 60));
   fill(0, 0, 139);
+  loadSong(currentSong);
 }
 
 void draw() {
   background(255);
   float centerX = width / 2;
 
-  // Border
   noFill();
   stroke(0);
   strokeWeight(5);
   rect(50, 50, width - 100, height - 100);
 
-  // Title Bar
   fill(200);
   rect(centerX - 300, 50, 600, 100);
   fill(0, 0, 139);
-  text("Alleyway Monastries", centerX, 100);
+  text("YEET Music - Merhawi Haile", centerX, 100);
 
-  // Album Image
-  image(album, centerX - 250, 180);
+  if (album != null) image(album, centerX - 250, 180);
 
-  // Control Buttons
+  drawButtons(centerX);
+
+  drawProgressBar(centerX);
+
+  if (!player.isPlaying() && isPlaying) {
+    currentSong = (currentSong + 1) % songs.length;
+    loadSong(currentSong);
+    player.play();
+  }
+
+  drawQuitButton();
+}
+
+void drawButtons(float centerX) {
   float btnY = 550;
   float btnSize = 100;
-  float totalButtonWidth = btnSize * 7;
-  float buttonX = centerX - totalButtonWidth / 2;
+  float totalWidth = btnSize * 7;
+  float x = centerX - totalWidth / 2;
 
-  // Fast Backward
-  drawButton(buttonX, btnY, btnSize, "⏪");
-  buttonX += btnSize;
+  String[] labels = {"⏪", isPlaying ? "⏸" : "▶", "⏹", "⏩", "⏭", "⏮", isMuted ? "🔇" : "🔊"};
+  for (int i = 0; i < labels.length; i++) {
+    if (mouseX > x && mouseX < x + btnSize && mouseY > btnY && mouseY < btnY + btnSize) {
+      fill(160); // Hover effect
+    } else {
+      fill(180);
+    }
+    rect(x, btnY, btnSize, btnSize);
+    fill(0);
+    textSize(40);
+    text(labels[i], x + btnSize / 2, btnY + btnSize / 2);
+    x += btnSize;
+  }
+}
 
-  // Play/Pause
-  drawButton(buttonX, btnY, btnSize, isPlaying ? "⏸" : "▶");
-  buttonX += btnSize;
-
-  // Stop
-  drawButton(buttonX, btnY, btnSize, "⏹");
-  buttonX += btnSize;
-
-  // Fast Forward
-  drawButton(buttonX, btnY, btnSize, "⏩");
-  buttonX += btnSize;
-
-  // Next
-  drawButton(buttonX, btnY, btnSize, "⏭");
-  buttonX += btnSize;
-
-  // Previous
-  drawButton(buttonX, btnY, btnSize, "⏮");
-  buttonX += btnSize;
-
-  // Mute/Unmute
-  drawButton(buttonX, btnY, btnSize, isMuted ? "🔇" : "🔊");
-
-  // Progress Bar
+void drawProgressBar(float centerX) {
   float barY = 700;
-  float barWidth = 100 * 15;
+  float barWidth = 1500;
   fill(220);
   rect(centerX - barWidth / 2, barY, barWidth, 30);
 
@@ -86,7 +83,6 @@ void draw() {
     rect(centerX - barWidth / 2, barY, progress, 30);
   }
 
-  // Time Display
   int currentMillis = player.position();
   int totalMillis = player.length();
   String currentTime = nf(currentMillis / 60000, 2) + ":" + nf((currentMillis / 1000) % 60, 2);
@@ -94,8 +90,9 @@ void draw() {
   fill(0);
   textSize(24);
   text(currentTime + " / " + totalTime, centerX, barY + 40);
+}
 
-  // Quit Button
+void drawQuitButton() {
   fill(200);
   rect(width - 90, 30, 50, 50);
   fill(255, 0, 0);
@@ -103,31 +100,15 @@ void draw() {
   text("X", width - 60, 55);
 }
 
-void drawButton(float x, float y, float size, String label) {
-  fill(180);
-  rect(x, y, size, size);
-  fill(0);
-  textSize(40);
-  text(label, x + size / 2, y + size / 2);
-}
-
 void mousePressed() {
   float centerX = width / 2;
   float btnY = 550;
   float btnSize = 100;
-  float totalButtonWidth = btnSize * 7;
-  float buttonX = centerX - totalButtonWidth / 2;
+  float x = centerX - btnSize * 3.5;
 
-  // Fast Backward
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
-    int newPos = player.position() - 5000;
-    player.cue(max(newPos, 0));
-    return;
-  }
-  buttonX += btnSize;
-
-  // Play/Pause
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+  if (isMouseOver(x, btnY, btnSize)) {
+    player.cue(max(player.position() - 5000, 0));
+  } else if (isMouseOver(x += btnSize, btnY, btnSize)) {
     if (isPlaying) {
       player.pause();
       isPlaying = false;
@@ -135,64 +116,38 @@ void mousePressed() {
       player.play();
       isPlaying = true;
     }
-    return;
-  }
-  buttonX += btnSize;
-
-  // Stop
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+  } else if (isMouseOver(x += btnSize, btnY, btnSize)) {
     player.pause();
     player.rewind();
     isPlaying = false;
-    return;
-  }
-  buttonX += btnSize;
-
-  // Fast Forward
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
-    int newPos = player.position() + 5000;
-    player.cue(min(newPos, player.length()));
-    return;
-  }
-  buttonX += btnSize;
-
-  // Next
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+  } else if (isMouseOver(x += btnSize, btnY, btnSize)) {
+    player.cue(min(player.position() + 5000, player.length()));
+  } else if (isMouseOver(x += btnSize, btnY, btnSize)) {
     currentSong = (currentSong + 1) % songs.length;
     loadSong(currentSong);
-    return;
-  }
-  buttonX += btnSize;
-
-  // Previous
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+    player.play();
+    isPlaying = true;
+  } else if (isMouseOver(x += btnSize, btnY, btnSize)) {
     currentSong = (currentSong - 1 + songs.length) % songs.length;
     loadSong(currentSong);
-    return;
-  }
-  buttonX += btnSize;
-
-  // Mute/Unmute
-  if (isMouseOver(buttonX, btnY, btnSize, btnSize)) {
+    player.play();
+    isPlaying = true;
+  } else if (isMouseOver(x += btnSize, btnY, btnSize)) {
     if (isMuted) {
       player.setGain(savedGain);
       isMuted = false;
     } else {
       savedGain = player.getGain();
-      player.setGain(-80);
+      player.setGain(-80); // Mute
       isMuted = true;
     }
-    return;
-  }
-
-  // Quit
-  if (isMouseOver(width - 90, 30, 50, 50)) {
+  } else if (mouseX > width - 90 && mouseX < width - 40 && mouseY > 30 && mouseY < 80) {
     exit();
   }
 }
 
-boolean isMouseOver(float x, float y, float w, float h) {
-  return mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
+boolean isMouseOver(float x, float y, float w) {
+  return mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + w;
 }
 
 void loadSong(int index) {
@@ -200,10 +155,20 @@ void loadSong(int index) {
     player.close();
   }
   player = minim.loadFile(songs[index]);
+  if (player == null) {
+    println("Error loading audio: " + songs[index]);
+    return;
+  }
   album = loadImage(albums[index]);
   if (album == null) {
-    println("Warning: Image file not found.");
+    println("Image not found: " + albums[index]);
     album = createImage(500, 300, RGB);
     album.loadPixels();
     for (int i = 0; i < album.pixels.length; i++) {
-      album.pixels[i] = color(200); // Light gray placeholder
+      album.pixels[i] = color(200);
+    }
+    album.updatePixels();
+  }
+  album.resize(500, 300);
+  isPlaying = false;
+} 
