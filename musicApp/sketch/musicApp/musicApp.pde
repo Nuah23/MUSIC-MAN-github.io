@@ -1,185 +1,208 @@
 import ddf.minim.*;
 
 Minim minim;
-AudioPlayer player;
-PImage album;
+AudioPlayer song;
+PImage albumImg;
+PFont mvBoliFont;
 
 boolean isPlaying = false;
-boolean isMuted = false;
-float savedVolume = 0.0;
-boolean loopInfinite = false;
-
-String[] songs = {
-  "data/song1.mp3",
-  "data/song2.mp3",
-  "data/song3.mp3"
-};
-
-String[] albums = {
-  "data/images.jpg",
-  "data/Dunhuang.jpg",
-  "data/502c99.webp"
-};
 
 String[] titles = {
-  "ALLEYWAY MONASTERY UNRELEASED TAPE",
-  "ALBUM 2 ALLEYWAY MONASTERY",
-  "NATIONAL 2005 MIXTAPE"
+  "ALBUM ONE:2017",
+  "ALBUM THREE:2020",
+  "UNRELEASED TAPE SAMPLE:2005"
 };
 
-int currentSong = 0;
+String[] audioPaths = {
+  "data/Drake - Laugh Now Cry Later (Instrumental) ft. Lil Durk - M Max.mp3",
+  "data/JACKBOYS, Travis Scott - OUT WEST (Audio) ft. Young Thug (OFFICIAL INSTRUMENTAL).mp3",
+  "data/Three 6 Mafia - Poppin' My Collar [Instrumental] - Crucial Mixtapes.mp3"
+};
+
+String[] imagePaths = {
+  "data/neworleans.png",
+  "data/Dunhuang.jpg",
+  "data/images.jpg"
+};
+
+color[] titleColors = {
+  color(0, 0, 255),     // 
+  color(255, 165, 0),   // 
+  color(0, 200, 0)      // 
+};
+
+int currentSongIndex = 0;
+
+// Dimensions as floats for smooth positioning
+float appWidth, appHeight;
+float titleHeight = 60.0;
+float topMargin = 20.0;
+float albumX, albumWidth, albumY, albumHeight;
+float buttonWidth, buttonHeight, buttonY;
+float barY, barHeight;
+float quitSize, quitX, quitY;
 
 void setup() {
-  size(800, 600); // OpenJDK-compatible size
+  fullScreen();
+  appWidth = (float) displayWidth;
+  appHeight = (float) displayHeight;
+
+  mvBoliFont = createFont("MVBoli", 32);
+  textFont(mvBoliFont);
   minim = new Minim(this);
-  loadSong(currentSong); // Auto-play first track
-  textAlign(CENTER, CENTER);
-  textSize(24);
+
+  // Calculate dimensions based on screen size (floats)
+  albumX = appWidth * 0.25f;
+  albumWidth = appWidth * 0.5f;
+  albumY = topMargin + titleHeight + 20.0f;
+  albumHeight = appHeight / 3.0f;
+
+  buttonWidth = appWidth / 6.0f;
+  buttonHeight = buttonWidth * 0.6f;
+  buttonY = albumY + albumHeight + 20.0f;
+
+  barY = buttonY + buttonHeight + 20.0f;
+  barHeight = 40.0f;
+
+  quitSize = 40.0f;
+  quitX = appWidth - quitSize - 10.0f;
+  quitY = 10.0f;
+
+  loadCurrentSong();
 }
 
 void draw() {
   background(255);
-  float centerX = width / 2;
 
-  // Title Bar
-  fill(200);
-  rect(centerX - 300, 50, 600, 50);
-  fill(0);
-  text(titles[currentSong], centerX, 75);
-
-  // Album Art
-  if (album != null) {
-    image(album, centerX - 150, 120, 300, 200);
-  } else {
-    fill(0);
-    text("No Album Art", centerX, 200);
-  }
-
-  // Draw interactive elements
-  drawButtons(centerX);
-  drawProgressBar(centerX);
+  drawTitleBar();
+  drawAlbumImage();
+  drawButtons();
+  drawProgressBar();
   drawQuitButton();
 }
 
-void drawButtons(float centerX) {
-  float y = 350;
-  float size = 80;
-  float totalWidth = size * 5;
-  float x = centerX - totalWidth / 2;
+void drawTitleBar() {
+  fill(220);
+  stroke(0);
+  strokeWeight(2);
+  rect(albumX, topMargin, albumWidth, titleHeight);
 
-  String[] labels = {"⏮", "⏯", "⏭", "🔊", "❌"};
+  fill(titleColors[currentSongIndex]);
+  textAlign(CENTER, CENTER);
+  textSize(28);
+  text(titles[currentSongIndex], appWidth / 2.0f, topMargin + titleHeight / 2.0f);
+}
 
-  for (int i = 0; i < 5; i++) {
-    fill(180);
-    rect(x, y, size, size);
+void drawAlbumImage() {
+  if (albumImg != null) {
+    image(albumImg, albumX, albumY, albumWidth, albumHeight);
+  } else {
+    fill(200);
+    rect(albumX, albumY, albumWidth, albumHeight);
     fill(0);
+    textAlign(CENTER, CENTER);
     textSize(32);
-    text(labels[i], x + size / 2, y + size / 2 + 10);
-    x += size + 10;
+    text("Image not found", albumX + albumWidth / 2.0f, albumY + albumHeight / 2.0f);
   }
 }
 
-void drawProgressBar(float centerX) {
-  float y = 500;
-  float barWidth = width - 200;
-  fill(220);
-  rect(centerX - barWidth / 2, y, barWidth, 20);
+void drawButtons() {
+  String[] labels = {"PREV", "PLAY", "NEXT", "STOP"};
 
-  if (player != null && player.isPlaying()) {
-    float progress = map(player.position(), 0, player.length(), 0, barWidth);
-    fill(0, 0, 139);
-    rect(centerX - barWidth / 2, y, progress, 20);
-  }
-
-  if (player != null) {
-    int pos = player.position();
-    int len = player.length();
-    String time = nf(pos / 60000, 2) + ":" + nf((pos / 1000) % 60, 2);
-    String total = nf(len / 60000, 2) + ":" + nf((len / 1000) % 60, 2);
-
+  for (int i = 0; i < labels.length; i++) {
+    float buttonX = albumX + (i * (buttonWidth + 10));
+    fill(mouseX > buttonX && mouseX < buttonX + buttonWidth && mouseY > buttonY && mouseY < buttonY + buttonHeight ? 150 : 180);
+    rect(buttonX, buttonY, buttonWidth, buttonHeight);
+    
     fill(0);
-    textSize(20);
-    text(time + " / " + total, centerX, y + 40);
+    textSize(24);
+    textAlign(CENTER, CENTER);
+    text(labels[i], buttonX + buttonWidth / 2, buttonY + buttonHeight / 2);
+  }
+}
+
+void drawProgressBar() {
+  stroke(0);
+  strokeWeight(2);
+  fill(155);
+  rect(albumX, barY, albumWidth, barHeight);
+
+  if (song != null && song.length() > 0) {
+    float progress = map(song.position(), 0, song.length(), 0, albumWidth);
+    fill(0);
+    noStroke();
+    rect(albumX, barY, progress, barHeight);
   }
 }
 
 void drawQuitButton() {
-  float x = width - 70;
-  float y = 30;
-  fill(200);
-  rect(x, y, 40, 40);
+  boolean hover = (mouseX > quitX && mouseX < quitX + quitSize && mouseY > quitY && mouseY < quitY + quitSize);
+  stroke(0);
+  strokeWeight(2);
+  fill(hover ? color(255, 220, 220) : color(255));
+  rect(quitX, quitY, quitSize, quitSize, 5);
+
   fill(255, 0, 0);
   textSize(20);
-  text("❌", x + 20, y + 25);
+  textAlign(CENTER, CENTER);
+  text("QUIT", quitX + quitSize / 2, quitY + quitSize / 2);
 }
 
 void mousePressed() {
-  float centerX = width / 2;
-  float y = 350;
-  float size = 80;
-  float totalWidth = size * 5;
-  float x = centerX - totalWidth / 2;
-
-  for (int i = 0; i < 5; i++) {
-    if (mouseX > x && mouseX < x + size && mouseY > y && mouseY < y + size) {
+  for (int i = 0; i < 4; i++) {
+    float buttonX = albumX + (i * (buttonWidth + 10));
+    if (mouseX > buttonX && mouseX < buttonX + buttonWidth && mouseY > buttonY && mouseY < buttonY + buttonHeight) {
       handleButtonPress(i);
     }
-    x += size + 10;
   }
 
-  if (mouseX > width - 70 && mouseX < width - 30 && mouseY > 30 && mouseY < 70) {
+  if (mouseX > quitX && mouseX < quitX + quitSize && mouseY > quitY && mouseY < quitY + quitSize) {
     exit();
   }
 }
 
-void handleButtonPress(int i) {
-  if (player == null) return;
-
-  switch (i) {
-    case 0: // Previous Track
-      currentSong = (currentSong - 1 + songs.length) % songs.length;
-      loadSong(currentSong);
-      break;
-    case 1: // Play/Pause
-      if (isPlaying) {
-        player.pause();
-        isPlaying = false;
-      } else {
-        player.play();
-        isPlaying = true;
-      }
-      break;
-    case 2: // Next Track
-      currentSong = (currentSong + 1) % songs.length;
-      loadSong(currentSong);
-      break;
-    case 3: // Mute/Unmute
-      isMuted = !isMuted;
-      player.setGain(isMuted ? -80 : savedVolume);
-      break;
-    case 4: // Quit
-      exit();
-      break;
+void handleButtonPress(int index) {
+  switch (index) {
+    case 0: prevSong(); break;
+    case 1: togglePlayPause(); break;
+    case 2: nextSong(); break;
+    case 3: stopSong(); break;
   }
 }
 
-void loadSong(int i) {
-  if (player != null) {
-    player.close();
+void loadCurrentSong() {
+  if (song != null) {
+    song.close();
   }
-  
-  player = minim.loadFile(songs[i]);
-  album = loadImage(albums[i]);
-  
-  if (album != null) {
-    album.resize(300, 200);
-  }
+  song = minim.loadFile(audioPaths[currentSongIndex]);
+  albumImg = loadImage(imagePaths[currentSongIndex]);
+  isPlaying = false;
+}
 
-  if (player != null) {
-    player.play();
-    isPlaying = true;
-    if (isMuted) player.setGain(-80);
+void togglePlayPause() {
+  if (song == null) return;
+  if (isPlaying) {
+    song.pause();
+    isPlaying = false;
   } else {
-    println("Error loading song: " + songs[i]);
+    song.play();
+    isPlaying = true;
   }
+}
+
+void stopSong() {
+  if (song == null) return;
+  song.pause();
+  song.rewind();
+  isPlaying = false;
+}
+
+void nextSong() {
+  currentSongIndex = (currentSongIndex + 1) % titles.length;
+  loadCurrentSong();
+}
+
+void prevSong() {
+  currentSongIndex = (currentSongIndex - 1 + titles.length) % titles.length;
+  loadCurrentSong();
 }
