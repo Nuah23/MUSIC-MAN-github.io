@@ -1,185 +1,173 @@
-import ddf.minim.*;                    // Imports the Minim library for audio functions
-import ddf.minim.analysis.*;           // Imports audio analysis classes (not used here, but part of Minim)
-import ddf.minim.effects.*;            // Imports audio effects classes (not used here)
-import ddf.minim.signals.*;            // Imports signal generator classes (not used here)
-import ddf.minim.spi.*;                // Imports service provider interface (not used here)
-import ddf.minim.ugens.*;              // Imports unit generators for audio (not used here)
+import ddf.minim.*;       
+import ddf.minim.analysis.*;
+import ddf.minim.effects.*; 
+import ddf.minim.signals.*;
+import ddf.minim.spi.*;
+import ddf.minim.ugens.*;
+Minim minim;
+AudioPlayer song; 
+PImage albumImg; 
+PFont CandaraFont; 
 
-Minim minim;                           // Object to manage audio
-AudioPlayer song;                      // Object to play audio files
-PImage albumImg;                       // Stores the album cover image
-PFont CandaraFont;                      // Stores the font for titles
+boolean isPlaying = false; 
+boolean isShuffle = false; 
+boolean isRepeat = false; 
+boolean isMuted = false; 
 
-boolean isPlaying = false;             // True if music is playing, false otherwise
-boolean isShuffle = false;             // True if shuffle is on
-boolean isRepeat = false;              // True if repeat is on
-boolean isMuted = false;               // True if muted
+String[] titles = { 
+  "Track One:2017", 
+  "Track Two:2020", 
+  "Unreleased:2005" 
+}; 
 
-String[] titles = {                    // Array of song titles
-  "Track One:2017",
-  "Track Two:2020",
-  "Unreleased:2005"
-};
+String[] audioPaths = { 
+  "data/Drake - Laugh Now Cry Later (Instrumental) ft. Lil Durk - M Max.mp3", 
+  "data/JACKBOYS, Travis Scott - OUT WEST (Audio) ft. Young Thug (OFFICIAL INSTRUMENTAL).mp3", 
+  "data/Three 6 Mafia - Poppin' My Collar [Instrumental] - Crucial Mixtapes.mp3" 
+}; 
 
-String[] audioPaths = {                // Array of song file paths
-  "data/Drake - Laugh Now Cry Later (Instrumental) ft. Lil Durk - M Max.mp3",
-  "data/JACKBOYS, Travis Scott - OUT WEST (Audio) ft. Young Thug (OFFICIAL INSTRUMENTAL).mp3",
-  "data//Three 6 Mafia - Poppin' My Collar [Instrumental] - Crucial Mixtapes.mp3"
-};
+String[] imagePaths = { // Array of file paths for album images.
+  "data/download.jpg", // Path to first album image.
+  "data/Dunhuang.jpg", // Path to second album image.
+  "data/images.jpg" // Path to third album image.
+}; // End of imagePaths array.
 
-String[] imagePaths = {                // Array of album image file paths
-  "data/download.jpg",
-  "data/Dunhuang.jpg",
-  "data/images.jpg"
-};
+color[] titleColors = { // Array of colors for song title display.
+  color(0, 0, 255),     // Blue color for first song.
+  color(255, 165, 0),   // Orange color for second song.
+  color(0, 200, 0)      // Green color for third song.
+}; // End of titleColors array.
 
-color[] titleColors = {                // Array of colors for song titles
-  color(0, 0, 255),                    // Blue for first song
-  color(255, 165, 0),                  // Orange for second song
-  color(0, 200, 0)                     // Green for third song
-};
+int currentSongIndex = 0; // Index of the currently selected song.
 
-int currentSongIndex = 0;              // Keeps track of which song is playing
+// Dimensions as floats for smooth positioning
+float appWidth, appHeight; // Application width and height.
+float titleHeight = 60.0; // Height of the title bar.
+float topMargin = 20.0; // Top margin for UI layout.
+float albumX, albumWidth, albumY, albumHeight; // Variables for album image position and size.
+float buttonWidth, buttonHeight, buttonY; // Variables for button sizes and Y position.
+float barY, barHeight; // Y position and height of progress bar.
+float quitSize, quitX, quitY; // Size and position of quit button.
 
-// GUI layout variables
-float appWidth, appHeight;             // App window size
-float titleHeight = 60.0;              // Height of the title bar
-float topMargin = 20.0;                // Space at the top of the window
-float albumX, albumWidth, albumY, albumHeight; // Album image position and size
-float buttonWidth, buttonHeight, buttonY;      // Button size and position
-float barY, barHeight;                 // Progress bar position and size
-float quitSize, quitX, quitY;          // Quit button size and position
+// Volume
+float volume = 0.7;  // between 0 and 1 // Default playback volume (70%).
 
-// Volume control
-float volume = 0.7;                    // Volume level (0 to 1)
+// Button indices (no more magic numbers)
+final int BTN_PREV    = 2; // Index for previous song button.
+final int BTN_REWIND  = 4; // Index for rewind button.
+final int BTN_PLAY    = 5; // Index for play/pause button.
+final int BTN_STOP    = 6; // Index for stop button.
+final int BTN_FFWD    = 7; // Index for fast-forward button.
+final int BTN_NEXT    = 9; // Index for next song button.
+final int BTN_SHUFFLE = 10; // Index for shuffle button.
+final int BTN_REPEAT  = 11; // Index for repeat button.
 
-// Button indices (updated for new layout)
-// SWAPPED: "Previous" and "Volume Up" button positions
-final int BTN_VOL_DOWN = 1;            // Volume Down button index
-final int BTN_VOL_UP   = 2;            // Volume Up button index (was 3, now 2)
-final int BTN_PREV     = 3;            // Previous button index (was 2, now 3)
-final int BTN_REWIND   = 4;            // Rewind button index
-final int BTN_PLAY     = 5;            // Play/Pause button index
-final int BTN_STOP     = 6;            // Stop button index
-final int BTN_FFWD     = 7;            // Fast Forward button index
-final int BTN_NEXT     = 8;            // Next button index
-final int BTN_PLAYLIST = 9;            // Playlist button index
-final int BTN_SHUFFLE  = 10;           // Shuffle button index
-final int BTN_REPEAT   = 11;           // Repeat button index
+// For progress bar click
+boolean isSeeking = false; // Boolean to track if user is seeking in progress bar.
 
-boolean isSeeking = false;             // True if user is moving the progress bar
+void setup() { // Processing setup function, runs once at start.
+  fullScreen(); // Make the application fullscreen.
+  appWidth = (float) displayWidth; // Set appWidth to display width.
+  appHeight = (float) displayHeight; // Set appHeight to display height.
 
-boolean showPlaylist = false;          // True if playlist popup is shown
+  CandaraFont = loadFont("Candara-Bold-48.vlw"); // Load custom font.
+  minim = new Minim(this); // Initialize Minim library.
 
-void setup() {
-  fullScreen();                        // Makes the app use the full screen
-  appWidth = (float) displayWidth;     // Sets app width to the screen width
-  appHeight = (float) displayHeight;   // Sets app height to the screen height
+  // Calculate dimensions based on screen size (floats)
+  albumX = appWidth * 0.25f; // Set X position for album image.
+  albumWidth = appWidth * 0.5f; // Set width for album image.
+  albumY = topMargin + titleHeight + 20.0f; // Set Y position for album image.
+  albumHeight = appHeight / 3.0f; // Set height for album image.
 
-  CandaraFont = loadFont("Candara-Bold-48.vlw"); // Loads the font for text
-  minim = new Minim(this);             // Initializes Minim (audio library)
+  buttonWidth = appWidth / 12.0f; // Set button width based on app size.
+  buttonHeight = buttonWidth; // Set button height equal to width.
+  buttonY = albumY + albumHeight + 20.0f; // Set Y position for buttons.
 
-  albumX = appWidth * 0.25f;           // Horizontal position for album image
-  albumWidth = appWidth * 0.5f;        // Width for album image
-  albumY = topMargin + titleHeight + 20.0f; // Vertical position for album image
-  albumHeight = appHeight / 3.0f;      // Height for album image
+  barY = buttonY + buttonHeight + 20.0f; // Set Y position for progress bar.
+  barHeight = 40.0f; // Set progress bar height.
 
-  buttonWidth = appWidth / 12.0f;      // Width of each control button
-  buttonHeight = buttonWidth;          // Height of each button (square)
-  buttonY = albumY + albumHeight + 20.0f; // Y position for buttons
+  quitSize = 40.0f; // Set size for quit button.
+  quitX = appWidth - quitSize - 10.0f; // Set X position for quit button.
+  quitY = 10.0f; // Set Y position for quit button.
 
-  barY = buttonY + buttonHeight + 20.0f; // Y position for progress bar
-  barHeight = 40.0f;                   // Height of progress bar
+  loadCurrentSong(); // Load the currently selected song.
+} // End of setup().
 
-  quitSize = 40.0f;                    // Size for the quit button (square)
-  quitX = appWidth - quitSize;         // X position for quit button (flush right, no margin)
-  quitY = 0;                           // Y position for quit button (flush top, no margin)
+void draw() { // Processing draw function, loops continuously.
+  background(255); // Set background color to white.
 
-  loadCurrentSong();                   // Loads the first song and image
-}
+  drawTitleBar(); // Draw the song title bar.
+  drawAlbumImage(); // Draw the current album image.
+  drawButtons(); // Draw the control buttons.
+  drawProgressBar(); // Draw the progress bar.
+  drawTimeLabels(); // Draw the time labels for current/total time.
+  drawQuitButton(); // Draw the quit button.
 
-void draw() {
-  background(255);                     // Sets window background to white
-  drawTitleBar();                      // Draws the song title bar
-  drawAlbumImage();                    // Shows the album image
-  drawButtons();                       // Shows the control buttons
-  drawProgressBar();                   // Shows the progress bar
-  drawTimeLabels();                    // Shows current time and total time
-  drawVolumeLabel();                   // Shows volume information
-  drawQuitButton();                    // Draws the quit/close button
-
-  if (showPlaylist) {                  // If playlist popup should be shown
-    drawPlaylistPopup();               // Draw the popup for playlist selection
-  }
-
-  // If song finished, go to next or repeat as needed
-  if (song != null && !song.isPlaying() && isPlaying) {
-    if (isRepeat) {                    // If repeat mode is on
-      song.rewind();                   // Restart the same song
-      song.play();                     // Play the song again
-    } else {                           // If not repeating
-      autoNextSong();                  // Play the next song
-    }
-  }
-}
-
-// Draws the rectangle and title at the top of the app
-void drawTitleBar() {
-  fill(220);                           // Light gray background
-  stroke(0);                           // Black border
-  strokeWeight(2);                     // Border thickness
-  rect(albumX, topMargin, albumWidth, titleHeight); // Draw rectangle
-
-  fill(titleColors[currentSongIndex]); // Different color for each song
-  textFont(CandaraFont);                // Use custom font
-  textAlign(CENTER, CENTER);           // Centered text
-  text(titles[currentSongIndex], appWidth / 2.0f, topMargin + titleHeight / 2.0f); // Show song title
-}
-
-// Draws the album image, or a placeholder if missing
-void drawAlbumImage() {
-  if (albumImg != null) {              // If the image loaded correctly
-    image(albumImg, albumX, albumY, albumWidth, albumHeight); // Show the image
-  } else {                             // If the image is missing
-    fill(200);                         // Gray background
-    rect(albumX, albumY, albumWidth, albumHeight); // Draw rectangle
-    fill(0);                           // Black text
-    textAlign(CENTER, CENTER);         // Centered text
-    textSize(32);                      // Big text
-    text("Image not found", albumX + albumWidth / 2.0f, albumY + albumHeight / 2.0f); // Message
-  }
-}
-
-// Draws the row of control buttons at the bottom
-void drawButtons() {
-  stroke(0);                           // Black border for buttons
-  strokeWeight(1);                     // Thin border
-
-  // Draw button backgrounds
-  for (int i = 0; i < 12; i++) {       // 12 buttons in total
-    float buttonX = buttonWidth * i;   // X position of current button
-    if (mouseX > buttonX && mouseX < buttonX + buttonWidth &&
-        mouseY > buttonY && mouseY < buttonY + buttonHeight) {
-      fill(150);                       // Darker when mouse is over
+  // Auto-next and repeat logic
+  if (song != null && !song.isPlaying() && isPlaying) { // If the song exists, isn't playing, but isPlaying is true
+    if (isRepeat) { // If repeat mode is active
+      song.rewind(); // Rewind song to start.
+      song.play(); // Play song again.
     } else {
-      fill(180);                       // Normal button color
+      autoNextSong(); // Otherwise, go to next song automatically.
     }
-    rect(buttonX, buttonY, buttonWidth, buttonHeight, 8); // Draw button
+  }
+} // End of draw().
+
+void drawTitleBar() { // Draw the title bar at the top.
+  fill(220); // Fill color for title bar background.
+  stroke(0); // Set border color to black.
+  strokeWeight(2); // Set border thickness.
+  rect(albumX, topMargin, albumWidth, titleHeight); // Draw rectangle for title bar.
+
+  fill(titleColors[currentSongIndex]); // Set fill color for song title.
+  textFont(CandaraFont); // Set the font for title.
+  textAlign(CENTER, CENTER); // Center align the text.
+  text(titles[currentSongIndex], appWidth / 2.0f, topMargin + titleHeight / 2.0f); // Draw the current song title.
+} // End of drawTitleBar().
+
+void drawAlbumImage() { // Draws the album image or a placeholder.
+  if (albumImg != null) { // If album image loaded successfully
+    image(albumImg, albumX, albumY, albumWidth, albumHeight); // Draw the album image.
+  } else {
+    fill(200); // Use gray fill for placeholder.
+    rect(albumX, albumY, albumWidth, albumHeight); // Draw placeholder rectangle.
+    fill(0); // Set text color to black.
+    textAlign(CENTER, CENTER); // Center align the text.
+    textSize(32); // Set text size for placeholder.
+    text("Image not found", albumX + albumWidth / 2.0f, albumY + albumHeight / 2.0f); // Show "Image not found".
+  }
+} // End of drawAlbumImage().
+
+void drawButtons() { // Draws all the control buttons.
+  stroke(0); // Set border color for buttons.
+  strokeWeight(1); // Set border thickness for buttons.
+
+  for (int i = 0; i < 12; i++) { // Loop over all 12 button positions.
+    float buttonX = buttonWidth * i; // Calculate X position for each button.
+    // Hover effect
+    if (mouseX > buttonX && mouseX < buttonX + buttonWidth &&
+        mouseY > buttonY && mouseY < buttonY + buttonHeight) { // If mouse is over the button
+      fill(150); // Use darker fill for hover.
+    } else {
+      fill(180); // Use lighter fill for normal state.
+    }
+    rect(buttonX, buttonY, buttonWidth, buttonHeight, 8); // Draw the button rectangle with rounded corners.
   }
 
-  fill(0);                             // Black for icons
-  // Draw each button's icon based on its function
-  for (int i = 0; i < 12; i++) {
-    float buttonX = buttonWidth * i;
-    float centerX = buttonX + buttonWidth / 2.0f;
-    float centerY = buttonY + buttonHeight / 2.0f;
-    float size = buttonWidth / 3.0f;
-    float gap = 5.0f;
+  fill(0); // Set icon color to black.
+  for (int i = 0; i < 12; i++) { // Loop again for drawing button icons.
+    float buttonX = buttonWidth * i; // X position of button.
+    float centerX = buttonX + buttonWidth / 2.0f; // Center X of button.
+    float centerY = buttonY + buttonHeight / 2.0f; // Center Y of button.
+    float size = buttonWidth / 3.0f; // Icon size.
+    float gap = 5.0f; // Gap used in icons.
 
-    if (i == 0) {                      // Mute button: speaker icon
+    if (i == 0) { // Mute/Unmute toggle button at the most left
       stroke(0);
       strokeWeight(3);
       noFill();
+      // Speaker body (rectangle)
       float spkW = size * 0.5f;
       float spkH = size * 0.7f;
       beginShape();
@@ -189,13 +177,15 @@ void drawButtons() {
       vertex(centerX + spkW * 0.3, centerY - spkH * 0.5);
       endShape(CLOSE);
 
-      if (isMuted) {                   // If muted, show red X
+      if (isMuted) {
+        // Mute icon: draw a red "X" over the speaker
         stroke(255, 0, 0);
         strokeWeight(4);
         line(centerX + spkW * 0.4, centerY - spkH * 0.5, centerX + spkW * 0.9, centerY + spkH * 0.5);
         line(centerX + spkW * 0.9, centerY - spkH * 0.5, centerX + spkW * 0.4, centerY + spkH * 0.5);
         stroke(0);
-      } else {                        // If not muted, show sound waves
+      } else {
+        // Unmute icon: draw sound waves
         noFill();
         strokeWeight(3);
         arc(centerX + spkW * 0.7, centerY, size * 0.4f, size * 0.4f, -PI/4, PI/4);
@@ -205,389 +195,278 @@ void drawButtons() {
       fill(0);
     }
 
-    if (i == BTN_VOL_DOWN) {           // Volume Down: minus sign
-      float lineW = size * 0.8f;
-      float lineH = size * 0.15f;
-      rect(centerX - lineW/2, centerY - lineH/2, lineW, lineH, 3);
-    }
-    if (i == BTN_VOL_UP) {             // Volume Up: plus sign (SWAPPED position)
-      float lineW = size * 0.8f;
-      float lineH = size * 0.15f;
-      rect(centerX - lineW/2, centerY - lineH/2, lineW, lineH, 3);
-      rect(centerX - lineH/2, centerY - lineW/2, lineH, lineW, 3);
-    }
-    if (i == BTN_PREV) {               // Previous song button (SWAPPED position)
-      rect(centerX - size / 2.0f, centerY - size / 2.0f, size / 5.0f, size);
+    if (i == BTN_PREV) { // Previous song button.
+      rect(centerX - size / 2.0f, centerY - size / 2.0f, size / 5.0f, size); // Draw bar.
       triangle(centerX - size / 2.0f + size / 5.0f, centerY,
                centerX + size / 2.0f, centerY - size / 2.0f,
-               centerX + size / 2.0f, centerY + size / 2.0f);
+               centerX + size / 2.0f, centerY + size / 2.0f); // Draw triangle arrow.
     }
-    if (i == BTN_REWIND) {             // Rewind button
-      triangle(centerX + size + gap, centerY - size / 2.0f, centerX + size + gap, centerY + size / 2.0f, centerX + gap, centerY);
-      triangle(centerX, centerY - size / 2.0f, centerX, centerY + size / 2.0f, centerX - size, centerY);
+    if (i == BTN_REWIND) { // Rewind 5 seconds button.
+      triangle(centerX + size + gap, centerY - size / 2.0f, centerX + size + gap, centerY + size / 2.0f, centerX + gap, centerY); // Second triangle.
+      triangle(centerX, centerY - size / 2.0f, centerX, centerY + size / 2.0f, centerX - size, centerY); // First triangle.
     }
-    if (i == BTN_PLAY) {               // Play/Pause button
-      if (isPlaying) {                 // If music is playing, show pause icon
-        float barWidth = size / 4.0f;
-        rect(centerX - barWidth - 2.0f, centerY - size / 2.0f, barWidth, size);
-        rect(centerX + 2.0f, centerY - size / 2.0f, barWidth, size);
-      } else {                         // If not playing, show play icon
-        triangle(centerX - size / 2.0f, centerY - size / 2.0f, centerX - size / 2.0f, centerY + size / 2.0f, centerX + size / 2.0f, centerY);
+    if (i == BTN_PLAY) { // Play/Pause button.
+      if (isPlaying) { // If currently playing, show pause icon.
+        float barWidth = size / 4.0f; // Width of pause bars.
+        rect(centerX - barWidth - 2.0f, centerY - size / 2.0f, barWidth, size); // Left pause bar.
+        rect(centerX + 2.0f, centerY - size / 2.0f, barWidth, size); // Right pause bar.
+      } else { // Otherwise show play icon.
+        triangle(centerX - size / 2.0f, centerY - size / 2.0f, centerX - size / 2.0f, centerY + size / 2.0f, centerX + size / 2.0f, centerY); // Play triangle.
       }
     }
-    if (i == BTN_STOP) {               // Stop button: square
-      rect(centerX - size / 2.0f, centerY - size / 2.0f, size, size);
+    if (i == BTN_STOP) { // Stop button.
+      rect(centerX - size / 2.0f, centerY - size / 2.0f, size, size); // Square for stop.
     }
-    if (i == BTN_FFWD) {               // Fast Forward button
-      triangle(centerX - size - gap, centerY - size / 2.0f, centerX - size - gap, centerY + size / 2.0f, centerX - gap, centerY);
-      triangle(centerX, centerY - size / 2.0f, centerX, centerY + size / 2.0f, centerX + size, centerY);
+    if (i == BTN_FFWD) { // Fast-forward button.
+      triangle(centerX - size - gap, centerY - size / 2.0f, centerX - size - gap, centerY + size / 2.0f, centerX - gap, centerY); // First triangle.
+      triangle(centerX, centerY - size / 2.0f, centerX, centerY + size / 2.0f, centerX + size, centerY); // Second triangle.
     }
-    if (i == BTN_NEXT) {               // Next song button (SWAPPED position)
-      triangle(centerX - size, centerY - size / 2.0f, centerX - size, centerY + size / 2.0f, centerX, centerY);
-      rect(centerX, centerY - size / 2.0f, size / 3.0f, size);
+    if (i == BTN_NEXT) { // Next song button.
+      triangle(centerX - size, centerY - size / 2.0f, centerX - size, centerY + size / 2.0f, centerX, centerY); // Arrow.
+      rect(centerX, centerY - size / 2.0f, size / 3.0f, size); // Bar.
     }
-    if (i == BTN_PLAYLIST) {           // Playlist button (SWAPPED position)
-      float lineHeight = size / 5.0f;
-      for (int l = -1; l <= 1; l++) {
-        rect(centerX - size/2, centerY + l*lineHeight, size, lineHeight/2, 2);
-      }
-    }
-    if (i == BTN_SHUFFLE) {            // Shuffle button: arrows crossing
-      stroke(0, isShuffle ? 180 : 80, 0);
-      strokeWeight(3);
-      noFill();
-      beginShape();
+    if (i == BTN_SHUFFLE) { // Shuffle button.
+      stroke(0, isShuffle ? 180 : 80, 0); // Change color if active.
+      strokeWeight(3); // Thicker lines for arrows.
+      noFill(); // No fill for lines.
+      beginShape(); // Start first arrow.
       vertex(centerX - size/2, centerY + size/2);
       vertex(centerX + size/2, centerY - size/2);
       endShape();
-      beginShape();
+      beginShape(); // Start second arrow.
       vertex(centerX - size/2, centerY - size/2);
       vertex(centerX + size/2, centerY + size/2);
       endShape();
-      triangle(centerX + size/2-5, centerY - size/2-3, centerX + size/2+5, centerY - size/2, centerX + size/2-5, centerY - size/2+3);
-      triangle(centerX + size/2-5, centerY + size/2-3, centerX + size/2+5, centerY + size/2, centerX + size/2-5, centerY + size/2+3);
+      // Arrow heads
+      triangle(centerX + size/2-5, centerY - size/2-3, centerX + size/2+5, centerY - size/2, centerX + size/2-5, centerY - size/2+3); // First head.
+      triangle(centerX + size/2-5, centerY + size/2-3, centerX + size/2+5, centerY + size/2, centerX + size/2-5, centerY + size/2+3); // Second head.
       stroke(0);
       fill(0);
     }
-    if (i == BTN_REPEAT) {             // Repeat button: circular arrow
-      stroke(0, 0, isRepeat ? 180 : 80);
-      strokeWeight(3);
-      noFill();
-      arc(centerX, centerY, size, size, PI/3, TWO_PI-PI/3);
-      float a = PI/3;
-      float r = size/2;
-      float ax = centerX + cos(a)*r;
-      float ay = centerY + sin(a)*r;
-      triangle(ax, ay, ax-8, ay-5, ax-8, ay+5);
+    if (i == BTN_REPEAT) { // Repeat button.
+      stroke(0, 0, isRepeat ? 180 : 80); // Color changes if repeat active.
+      strokeWeight(3); // Thicker line for arc.
+      noFill(); // No fill for arc.
+      arc(centerX, centerY, size, size, PI/3, TWO_PI-PI/3); // Draw arc.
+      float a = PI/3; // Angle for arrow head.
+      float r = size/2; // Radius for arc.
+      float ax = centerX + cos(a)*r; // Arrow X position.
+      float ay = centerY + sin(a)*r; // Arrow Y position.
+      triangle(ax, ay, ax-8, ay-5, ax-8, ay+5); // Draw the arrow head.
       stroke(0);
       fill(0);
     }
   }
-}
+} // End of drawButtons().
 
-// Draws the song progress bar
-void drawProgressBar() {
-  stroke(0);                           // Black border
-  strokeWeight(2);                     // Thickness
-  fill(155);                           // Gray background
-  rect(0, barY, appWidth, barHeight);  // Draws the progress bar
+void drawProgressBar() { // Draw the playback progress bar.
+  stroke(0); // Set border color.
+  strokeWeight(2); // Set border thickness.
+  fill(155); // Fill color for progress bar background.
+  rect(0, barY, appWidth, barHeight); // Draw the progress bar background.
 
-  if (song != null && song.length() > 0) { // If a song is loaded
-    float progress = map(song.position(), 0, song.length(), 0, appWidth); // Progress bar width
-    fill(0);                           // Black fill for progress
-    noStroke();
-    rect(0, barY, progress, barHeight); // Draws filled part
+  if (song != null && song.length() > 0) { // If a song is loaded and has length.
+    float progress = map(song.position(), 0, song.length(), 0, appWidth); // Calculate progress as width.
+    fill(0);  // Black color for progress
+    noStroke(); // No border for progress rect.
+    rect(0, barY, progress, barHeight); // Draw the filled progress.
   }
-}
+} // End of drawProgressBar().
 
-// Draws time labels below the progress bar
-void drawTimeLabels() {
-  float smallW = appWidth * 0.1f;      // Width for time boxes
-  float smallH = 20.0f;                // Height for time boxes
-  float smallY = barY + barHeight + 10.0f; // Y position for time
-  float rightX = appWidth - smallW - 10.0f; // X for total time
-  float leftX = rightX - smallW;       // X for current time
+void drawTimeLabels() { // Draws current and total time labels.
+  float smallW = appWidth * 0.1f; // Small box width for time label.
+  float smallH = 20.0f; // Height for time label box.
+  float smallY = barY + barHeight + 10.0f; // Y position for time labels.
+  float rightX = appWidth - smallW - 10.0f; // Right box X position.
+  float leftX = rightX - smallW; // Left box X position.
 
-  fill(200);                           // Gray background
-  stroke(0);                           // Black border
-  rect(leftX, smallY, smallW, smallH); // Current time box
-  rect(rightX, smallY, smallW, smallH);// Total time box
+  fill(200); // Fill color for boxes.
+  stroke(0); // Border color.
+  rect(leftX, smallY, smallW, smallH); // Draw left box for current time.
+  rect(rightX, smallY, smallW, smallH); // Draw right box for total time.
 
-  fill(0);                             // Black text
-  textAlign(CENTER, CENTER);           // Centered text
-  textSize(24);                        // Big text
+  fill(0); // Text color.
+  textAlign(CENTER, CENTER); // Center text.
+  textSize(24); // Text size.
 
-  int currentMillis = song != null ? song.position() : 0; // Current position in ms
-  int currentSeconds = currentMillis / 1000;              // Seconds
-  int currentMinutes = currentSeconds / 60;               // Minutes
-  currentSeconds %= 60;                                   // Seconds remainder
+  int currentMillis = song != null ? song.position() : 0; // Get song's current position.
+  int currentSeconds = currentMillis / 1000; // Convert to seconds.
+  int currentMinutes = currentSeconds / 60; // Convert to minutes.
+  currentSeconds %= 60; // Remainder seconds.
 
-  int totalMillis = song != null ? song.length() : 0;     // Song length in ms
-  int totalSeconds = totalMillis / 1000;                  // Seconds
-  int totalMinutes = totalSeconds / 60;                   // Minutes
-  totalSeconds %= 60;                                     // Seconds remainder
+  int totalMillis = song != null ? song.length() : 0; // Get total song length.
+  int totalSeconds = totalMillis / 1000; // Total seconds.
+  int totalMinutes = totalSeconds / 60; // Total minutes.
+  totalSeconds %= 60; // Remainder seconds.
 
-  String currentTime = nf(currentMinutes, 1) + ":" + nf(currentSeconds, 2); // Format curr time
-  String totalTime = nf(totalMinutes, 1) + ":" + nf(totalSeconds, 2);       // Format total time
+  String currentTime = nf(currentMinutes, 1) + ":" + nf(currentSeconds, 2); // Format current time.
+  String totalTime = nf(totalMinutes, 1) + ":" + nf(totalSeconds, 2); // Format total time.
 
-  text(currentTime, leftX + smallW / 2.0f, smallY + smallH / 2.0f);         // Draw curr time
-  text(totalTime, rightX + smallW / 2.0f, smallY + smallH / 2.0f);          // Draw total time
-}
+  text(currentTime, leftX + smallW / 2.0f, smallY + smallH / 2.0f); // Draw current time label.
+  text(totalTime, rightX + smallW / 2.0f, smallY + smallH / 2.0f); // Draw total time label.
+} // End of drawTimeLabels().
 
-// Draws the volume level label above the buttons
-void drawVolumeLabel() {
-  String volText = "Volume: " + int(volume * 100) + "%"; // Shows volume as percentage
-  fill(50);                             // Dark gray text
-  textSize(24);                         // Big text
-  textAlign(RIGHT, TOP);                // Right-aligned, top
-  text(volText, appWidth - 20, buttonY - 30); // Draw volume label
-}
+void drawQuitButton() { // Draws a button to quit the application.
+  boolean hover = (mouseX > quitX && mouseX < quitX + quitSize && mouseY > quitY && mouseY < quitY + quitSize); // Check if mouse is over quit button.
+  stroke(0); // Border color.
+  strokeWeight(2); // Border thickness.
+  if (hover) fill(255, 220, 220); // Fill red if hovered.
+  else noFill(); // No fill otherwise.
+  rect(quitX, quitY, quitSize, quitSize, 5); // Draw quit button rectangle.
 
-// Draws the quit (close) button in upper right
-void drawQuitButton() {
-  boolean hover = (mouseX > quitX && mouseX < quitX + quitSize && mouseY > quitY && mouseY < quitY + quitSize); // Check mouse hover
-  stroke(0);                           // Black border
-  strokeWeight(2);                     // Thickness
-  if (hover) fill(255, 220, 220);      // Light red if hovered
-  else noFill();                       // Transparent if not hovered
-  rect(quitX, quitY, quitSize, quitSize, 5); // Draws rectangle
+  pushMatrix(); // Save transformation state.
+  translate(quitX + quitSize / 2.0f, quitY + quitSize / 2.0f); // Move origin to center of quit button.
+  rotate(radians(45)); // Rotate for X symbol.
+  stroke(255, 0, 0); // Red stroke for X.
+  strokeWeight(3); // Thicker lines for X.
+  line(-10, 0, 10, 0); // Draw first line of X.
+  line(0, -10, 0, 10); // Draw second line of X.
+  popMatrix(); // Restore transformation.
+} // End of drawQuitButton().
 
-  pushMatrix();                        // Save drawing state
-  translate(quitX + quitSize / 2.0f, quitY + quitSize / 2.0f); // Move to center of button
-  rotate(radians(45));                 // Rotate lines for "X"
-  stroke(255, 0, 0);                   // Red lines
-  strokeWeight(3);                     // Thicker lines
-  line(-10, 0, 10, 0);                 // First line
-  line(0, -10, 0, 10);                 // Second line
-  popMatrix();                         // Restore drawing state
-}
-
-// Draws the playlist popup above the playlist button
-void drawPlaylistPopup() {
-  float popupWidth = 400;              // Width of the popup
-  float popupHeight = 60 + 50 * titles.length; // Height depends on number of songs
-  float popupX = appWidth / 2 - popupWidth / 2; // X position (centered)
-  float popupY = buttonY - popupHeight - 20;    // Y position (above buttons)
-
-  fill(245);                           // Very light gray background
-  stroke(0);                           // Black border
-  rect(popupX, popupY, popupWidth, popupHeight, 12); // Draw popup
-
-  fill(0);                             // Black text
-  textAlign(CENTER, CENTER);           // Centered text
-  textSize(28);                        // Big title
-  text("Select a song:", popupX + popupWidth / 2, popupY + 30); // Title above song list
-
-  for (int i = 0; i < titles.length; i++) { // For each song title
-    float y = popupY + 60 + i * 50;   // Y position for each song
-    if (mouseX > popupX && mouseX < popupX + popupWidth &&
-        mouseY > y - 20 && mouseY < y + 20) {
-      fill(220, 240, 255);            // Highlight if mouse is over
-      rect(popupX + 10, y - 20, popupWidth - 20, 40, 6); // Draw highlight box
-      fill(0);                        // Black text
-    }
-    textSize(24);                     // Slightly smaller text
-    text(titles[i], popupX + popupWidth / 2, y); // Draw song title
-  }
-}
-
-// Handles mouse button clicks
-void mousePressed() {
-  // If clicking the progress bar, seek to new position
-  if (mouseY > barY && mouseY < barY + barHeight) {
-    float clickRatio = constrain(mouseX / appWidth, 0, 1); // How far along the bar
+void mousePressed() { // Handles mouse press events.
+  // Progress bar seek
+  if (mouseY > barY && mouseY < barY + barHeight) { // Check if click is on progress bar.
+    float clickRatio = constrain(mouseX / appWidth, 0, 1); // Get position ratio.
     if (song != null) {
-      int newPos = int(song.length() * clickRatio); // New position in ms
-      song.cue(newPos);                    // Move to new position
+      int newPos = int(song.length() * clickRatio); // Calculate new song position.
+      song.cue(newPos); // Seek to new position.
     }
-    return;                                // Don't process other clicks
+    return; // Don't process further.
   }
 
-  // If playlist popup is open, check if a song is clicked
-  if (showPlaylist) {
-    float popupWidth = 400;
-    float popupHeight = 60 + 50 * titles.length;
-    float popupX = appWidth / 2 - popupWidth / 2;
-    float popupY = buttonY - popupHeight - 20;
-    for (int i = 0; i < titles.length; i++) {
-      float y = popupY + 60 + i * 50;
-      if (mouseX > popupX && mouseX < popupX + popupWidth &&
-          mouseY > y - 20 && mouseY < y + 20) {
-        currentSongIndex = i;         // Set current song to chosen index
-        loadCurrentSong();            // Load and play the chosen song
-        showPlaylist = false;         // Hide the popup
-        return;                       // Don't process other clicks
-      }
-    }
-  }
-
-  // Check each control button
-  for (int i = 0; i < 12; i++) {
-    float buttonX = buttonWidth * i;
+  // Control buttons
+  for (int i = 0; i < 12; i++) { // Loop through all control buttons.
+    float buttonX = buttonWidth * i; // Calculate button X position.
     if (mouseX > buttonX && mouseX < buttonX + buttonWidth &&
-        mouseY > buttonY && mouseY < buttonY + buttonHeight) {
-      switch(i) {
-        case 0:                        // Mute/unmute
-          isMuted = !isMuted;          // Toggle mute
-          if (song != null) song.setGain(isMuted ? -80 : map(volume, 0, 1, -80, 0)); // Set volume
+        mouseY > buttonY && mouseY < buttonY + buttonHeight) { // Check if mouse is over button.
+      switch(i) { // Handle button actions.
+        case 0: // Mute/Unmute toggle button
+          isMuted = !isMuted; // Toggle mute state
+          if (song != null) song.setGain(isMuted ? -80 : map(volume, 0, 1, -80, 0)); // Mute or restore volume
           break;
-        case BTN_VOL_DOWN:             // Volume down
-          setVolume(volume - 0.05f);   // Decrease volume
-          break;
-        case BTN_VOL_UP:               // Volume up (SWAPPED position)
-          setVolume(volume + 0.05f);   // Increase volume
-          break;
-        case BTN_PREV:                 // Previous song (SWAPPED position)
-          prevSong();                  // Go to previous song
-          break;
-        case BTN_REWIND:               // Rewind
-          rewindFive();                // Go back 5 seconds
-          break;
-        case BTN_PLAY:                 // Play/pause
-          togglePlayPause();           // Play or pause song
-          break;
-        case BTN_STOP:                 // Stop
-          stopSong();                  // Stop music
-          break;
-        case BTN_FFWD:                 // Fast forward
-          forwardFive();               // Skip ahead 5 seconds
-          break;
-        case BTN_NEXT:                 // Next song (SWAPPED position)
-          nextSong();                  // Go to next song
-          break;
-        case BTN_PLAYLIST:             // Playlist (SWAPPED position)
-          showPlaylist = !showPlaylist; // Show/hide playlist popup
-          break;
-        case BTN_SHUFFLE:              // Shuffle
-          isShuffle = !isShuffle;      // Toggle shuffle mode
-          break;
-        case BTN_REPEAT:               // Repeat
-          isRepeat = !isRepeat;        // Toggle repeat mode
-          break;
+        case BTN_PREV:    prevSong(); break; // Previous song.
+        case BTN_REWIND:  rewindFive(); break; // Rewind 5 seconds.
+        case BTN_PLAY:    togglePlayPause(); break; // Play or pause.
+        case BTN_STOP:    stopSong(); break; // Stop song.
+        case BTN_FFWD:    forwardFive(); break; // Forward 5 seconds.
+        case BTN_NEXT:    nextSong(); break; // Next song.
+        case BTN_SHUFFLE: isShuffle = !isShuffle; break; // Toggle shuffle.
+        case BTN_REPEAT:  isRepeat = !isRepeat; break; // Toggle repeat.
       }
     }
   }
 
-  // If quit button is clicked, close the app
+  // Quit button
   if (mouseX > quitX && mouseX < quitX + quitSize &&
-      mouseY > quitY && mouseY < quitY + quitSize) {
-    exit();                            // Exits the program
+      mouseY > quitY && mouseY < quitY + quitSize) { // If mouse on quit button.
+    exit(); // Exit the application.
   }
-}
+} // End of mousePressed().
 
-// Handles key presses for keyboard shortcuts
-void keyPressed() {
-  if (key == ' ' || key == 'k') togglePlayPause(); // Spacebar or 'k' toggles play/pause
-  else if (keyCode == RIGHT) nextSong();           // Right arrow for next song
-  else if (keyCode == LEFT) prevSong();            // Left arrow for previous song
-  else if (keyCode == UP) setVolume(volume + 0.05f);      // Up arrow for volume up
-  else if (keyCode == DOWN) setVolume(volume - 0.05f);    // Down arrow for volume down
-}
+void keyPressed() { // Handles key press events.
+  if (key == ' ' || key == 'k') togglePlayPause(); // Space or 'k' toggles play/pause.
+  else if (keyCode == RIGHT) nextSong(); // Right arrow for next song.
+  else if (keyCode == LEFT) prevSong(); // Left arrow for previous song.
+  else if (keyCode == UP) setVolume(volume + 0.05f); // Up arrow increases volume.
+  else if (keyCode == DOWN) setVolume(volume - 0.05f); // Down arrow decreases volume.
+} // End of keyPressed().
 
-// Sets the music volume (0 to 1)
-void setVolume(float v) {
-  volume = constrain(v, 0, 1);         // Keep within bounds
-  if (song != null && !isMuted) song.setGain(map(volume, 0, 1, -80, 0)); // Set volume
-}
+void setVolume(float v) { // Sets the playback volume.
+  volume = constrain(v, 0, 1); // Constrain volume between 0 and 1.
+  if (song != null && !isMuted) song.setGain(map(volume, 0, 1, -80, 0)); // Set gain for audio output, only if not muted.
+} // End of setVolume().
 
-// Loads the song and image for the current index
-void loadCurrentSong() {
-  if (song != null) {                  // If a song is already loaded
-    song.close();                      // Close it
+void loadCurrentSong() { // Loads the current song and album image.
+  if (song != null) {
+    song.close(); // Close previous song if it exists.
   }
-  song = minim.loadFile(audioPaths[currentSongIndex]); // Load new song
-  albumImg = loadImage(imagePaths[currentSongIndex]);  // Load new image
-  isPlaying = false;                   // Not playing yet
-  setVolume(volume);                   // Set volume
-  if (song != null) song.setGain(isMuted ? -80 : map(volume, 0, 1, -80, 0)); // Set gain
-}
+  song = minim.loadFile(audioPaths[currentSongIndex]); // Load new audio file.
+  albumImg = loadImage(imagePaths[currentSongIndex]); // Load new album image.
+  isPlaying = false; // Set playing state to false.
+  setVolume(volume); // Set volume for new song.
+  if (song != null) song.setGain(isMuted ? -80 : map(volume, 0, 1, -80, 0)); // Apply mute state.
+} // End of loadCurrentSong().
 
-// Play or pause the current song
-void togglePlayPause() {
-  if (song == null) return;            // If no song, do nothing
-  if (isPlaying) {                     // If already playing
-    song.pause();                      // Pause the song
-    isPlaying = false;                 // Update state
-  } else {                             // If not playing
-    song.play();                       // Play the song
-    isPlaying = true;                  // Update state
+void togglePlayPause() { // Toggles play and pause states.
+  if (song == null) return; // Do nothing if song is null.
+  if (isPlaying) { // If playing,
+    song.pause(); // Pause song.
+    isPlaying = false; // Set playing state to false.
+  } else { // If not playing,
+    song.play(); // Play song.
+    isPlaying = true; // Set playing state to true.
   }
-}
+} // End of togglePlayPause().
 
-// Stop the current song and reset position
-void stopSong() {
-  if (song == null) return;            // If no song, do nothing
-  song.pause();                        // Pause the song
-  song.rewind();                       // Go back to start
-  isPlaying = false;                   // Update state
-}
+void stopSong() { // Stops the current song and resets position.
+  if (song == null) return; // Do nothing if song is null.
+  song.pause(); // Pause playback.
+  song.rewind(); // Rewind to start.
+  isPlaying = false; // Set playing state to false.
+} // End of stopSong().
 
-// Go to the next song (shuffle if enabled)
-void nextSong() {
-  if (isShuffle) {                     // If shuffle mode
-    int prevIdx = currentSongIndex;    // Remember current song
-    while (titles.length > 1) {        // Loop until a new song is chosen
-      currentSongIndex = int(random(titles.length)); // Pick random song
-      if (currentSongIndex != prevIdx) break; // Make sure it's not the same
+void nextSong() { // Moves to the next song (or random if shuffle).
+  if (isShuffle) { // If shuffle mode,
+    int prevIdx = currentSongIndex; // Store previous index.
+    while (titles.length > 1) { // Only if more than 1 song.
+      currentSongIndex = int(random(titles.length)); // Pick random index.
+      if (currentSongIndex != prevIdx) break; // Make sure it's different.
     }
-  } else {                             // If not shuffle
-    currentSongIndex++;                // Go to next song
-    if (currentSongIndex >= titles.length) currentSongIndex = 0; // Wrap around
+  } else { // If not shuffle
+    currentSongIndex++; // Go to next index.
+    if (currentSongIndex >= titles.length) currentSongIndex = 0; // Loop to start if at end.
   }
-  loadCurrentSong();                   // Load and play the song
-}
+  loadCurrentSong(); // Load the new song.
+} // End of nextSong().
 
-// Go to the previous song (shuffle if enabled)
-void prevSong() {
-  if (isShuffle) {                     // If shuffle mode
-    int prevIdx = currentSongIndex;    // Remember current song
-    while (titles.length > 1) {        // Loop until a new song is chosen
-      currentSongIndex = int(random(titles.length)); // Pick random song
-      if (currentSongIndex != prevIdx) break; // Make sure it's not the same
+void prevSong() { // Moves to the previous song (or random if shuffle).
+  if (isShuffle) { // If shuffle mode,
+    int prevIdx = currentSongIndex; // Store current index.
+    while (titles.length > 1) { // Only if more than 1 song.
+      currentSongIndex = int(random(titles.length)); // Pick random index.
+      if (currentSongIndex != prevIdx) break; // Ensure it's different.
     }
-  } else {                             // If not shuffle
-    currentSongIndex--;                // Go to previous song
-    if (currentSongIndex < 0) currentSongIndex = titles.length - 1; // Wrap around
+  } else { // If not shuffle,
+    currentSongIndex--; // Move to previous index.
+    if (currentSongIndex < 0) currentSongIndex = titles.length - 1; // Loop to last if at start.
   }
-  loadCurrentSong();                   // Load and play the song
-}
+  loadCurrentSong(); // Load the new song.
+} // End of prevSong().
 
-// Rewind 5 seconds
-void rewindFive() {
-  if (song == null) return;            // If no song, do nothing
-  int newPos = max(0, song.position() - 5000); // 5000 ms = 5 seconds
-  song.cue(newPos);                    // Set new position
-}
+void rewindFive() { // Rewinds playback by 5 seconds.
+  if (song == null) return; // Do nothing if song is null.
+  int newPos = max(0, song.position() - 5000); // Calculate new position.
+  song.cue(newPos); // Seek to new position.
+} // End of rewindFive().
 
-// Fast forward 5 seconds
-void forwardFive() {
-  if (song == null) return;            // If no song, do nothing
-  int newPos = min(song.length(), song.position() + 5000); // 5000 ms = 5 seconds
-  song.cue(newPos);                    // Set new position
-}
+void forwardFive() { // Fast-forwards playback by 5 seconds.
+  if (song == null) return; // Do nothing if song is null.
+  int newPos = min(song.length(), song.position() + 5000); // Calculate new position.
+  song.cue(newPos); // Seek to new position.
+} // End of forwardFive().
 
-// Auto-play next song when current finishes
-void autoNextSong() {
-  if (isShuffle) {                     // If shuffle mode
-    int prevIdx = currentSongIndex;    // Remember current song
-    while (titles.length > 1) {        // Loop until a new song is chosen
-      currentSongIndex = int(random(titles.length)); // Pick random song
-      if (currentSongIndex != prevIdx) break; // Make sure it's not the same
+// Auto-next for end-of-song
+void autoNextSong() { // Automatically goes to next song at end.
+  if (isShuffle) { // If shuffle mode,
+    int prevIdx = currentSongIndex; // Store previous index.
+    while (titles.length > 1) { // Only if more than 1 song.
+      currentSongIndex = int(random(titles.length)); // Pick random index.
+      if (currentSongIndex != prevIdx) break; // Ensure it's different.
     }
-  } else {                             // If not shuffle
-    currentSongIndex++;                // Go to next song
-    if (currentSongIndex >= titles.length) currentSongIndex = 0; // Wrap around
+  } else { // If not shuffle,
+    currentSongIndex++; // Go to next song.
+    if (currentSongIndex >= titles.length) currentSongIndex = 0; // Loop to first if at end.
   }
-  loadCurrentSong();                   // Load new song
-  song.play();                         // Start playing it
-  isPlaying = true;                    // Update state
-}
+  loadCurrentSong(); // Load the new song.
+  song.play(); // Start playing new song.
+  isPlaying = true; // Set playing state to true.
+} // End of autoNextSong().
 
-// Stops and closes everything when app quits
-void stop() {
-  if (song != null) {                  // If a song is loaded
-    song.close();                      // Close it
+void stop() { // Called when sketch exits.
+  if (song != null) { // If song exists,
+    song.close(); // Close current song.
   }
-  minim.stop();                        // Stop Minim audio
-  super.stop();                        // Finish up
-}
+  minim.stop(); // Stop Minim library.
+  super.stop(); // Call superclass stop.
+} // End of stop().
