@@ -63,19 +63,19 @@ void setup() {
 
   // --- ONLY THE LINES BELOW ARE CHANGED ---
   String[] songNames = {
-    "Drake - Laugh Now Cry Later (Instrumental) ft. Lil Durk - M Max",
-    "playboi carti - stop breathing instrumental - prod antoniolamar",
-    "Three 6 Mafia - Poppin' My Collar [Instrumental] - Crucial Mixtapes",
-    "JACKBOYS, Travis Scott - OUT WEST (Audio) ft. Young Thug (OFFICIAL INSTRUMENTAL)"
+    "Drake - Laugh Now Cry Later (Instrumental) ft. Lil Durk - M Max.mp3",
+    "JACKBOYS, Travis Scott - OUT WEST (Audio) ft. Young Thug (OFFICIAL INSTRUMENTAL).mp3",
+    "playboi carti - stop breathing instrumental - prod antoniolamar.mp3",
+    "Three 6 Mafia - Poppin' My Collar [Instrumental] - Crucial Mixtapes.mp3"
   };
   String fileExtension_mp3 = ".mp3";
   String musicDirectory = "data/";
 
-  for (int i = 0; i < numberOfSongs; i++) {
-    String file = musicDirectory + songNames[i] ;
-    playList[i] = minim.loadFile(file);
-    
-  }
+     for (int i = 0; i < numberOfSongs; i++) {
+     String file = musicDirectory + songNames[i];
+     playList[i] = minim.loadFile(file);
+     playListMetaData[i] = playList[i].getMetaData();
+   }
   currentSong=0;
   // --- END OF CHANGED SECTION ---
 
