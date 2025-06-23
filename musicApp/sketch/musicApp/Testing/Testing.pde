@@ -1,29 +1,23 @@
-import ddf.minim.*;
-import ddf.minim.analysis.*;
-import ddf.minim.effects.*;
-import ddf.minim.signals.*;
-import ddf.minim.spi.*;
-import ddf.minim.ugens.*;
-
+// Import the Minim audio library
 import ddf.minim.*;
 
 Minim minim;
 AudioPlayer song;
 PImage cover;
-boolean isMuted = false;
-float volume = 0.5;
-
-
 
 void setup() {
-  size(800, 600);
-  minim = new Minim(this);
-  song = minim.loadFile("data/Drake.mp3");
-  song.play();
+  size(500, 500); // Set window size
+
   
 
-  cover = loadImage("data/download.jpg");
-  imageMode(CENTER);
+  // Initialize Minim and load song
+  minim = new Minim(this);
+  song = minim.loadFile("../data/Drake.mp3");
 
+  // Play the song
+  song.play();
+}
 
+void draw() {
+  
 }
